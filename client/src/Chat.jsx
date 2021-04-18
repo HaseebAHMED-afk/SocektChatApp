@@ -1,17 +1,28 @@
 import React, { useState } from 'react'
 
-import { ApolloClient , InMemoryCache , ApolloProvider , gql , useQuery , useMutation} from '@apollo/client'
+import { ApolloClient , InMemoryCache , ApolloProvider , gql , useSubscription , useMutation} from '@apollo/client'
 import { Alert ,Button , FormControl , Container , Row , Col } from 'react-bootstrap'
+import { WebSocketLink } from '@apollo/client/link/ws'
 
+
+const wsLink = new WebSocketLink({
+    uri:'ws://localhost:4000',
+    options:{
+        reconnect: true
+    }
+})
 
 const client = new ApolloClient({
+    link: wsLink,
     uri:'http://localhost:4000/',
     cache: new InMemoryCache()
 })
 
 
+
+
 const GET_MESSAGES = gql `
-    query{
+    subscription{
   messages{
     id
     user
@@ -26,27 +37,25 @@ const POST_MESSAGE = gql `
 `
 
 const Messages = ({user}) =>{
-    const { data } = useQuery(GET_MESSAGES)
+    const { data } = useSubscription(GET_MESSAGES)
     if(!data){
         return null
     }
 
     return (
-        <div style={{width:'75%' , margin:'auto'}} >
+        <div style={{width:'75%' , margin:'25px auto'}} >
             {data.messages.map(({id , user: messageUser , content} , i)=>(
-                <div style={{display: 'flex', justifyContent: user === messageUser ? 'flex-end' :'flex-start' , paddingBottom:'1em'}} >
-                     <Alert  variant={ user !== messageUser ? 'success' : 'danger'} style={{borderRadius:'1em'}} >
-                        {content}
-                    </Alert>
+                <div key={i} style={{display: 'flex', justifyContent: user === messageUser ? 'flex-end' :'flex-start' , paddingBottom:'1em'}} >
+                     
                     {
-                        user === messageUser && (
+                        user !== messageUser && (
                             <div 
-                            key={i}
                                 style={{
                                     height:50,
                                     width: 50,
                                     marginRight:'0.5em',
-                                    border:'2px solid black',
+                                    border:'2px solid lightblue',
+                                    color:'lightblue',
                                     borderRadius:25,
                                     textAlign:'center',
                                     fontSize:'18pt',
@@ -58,7 +67,9 @@ const Messages = ({user}) =>{
                             </div>
                         )
                     }
-                   
+                   <Alert  variant={ user !== messageUser ? 'success' : 'danger'} style={{borderRadius:'1em'}} >
+                        {content}
+                    </Alert>
                     
                 </div>
             ))}
@@ -95,7 +106,7 @@ const Chat = () => {
         <div>
            <Messages user={msg.user} />
            <Container>
-           <Row>
+           <Row style={{margin:10}} >
                 <Col xs={2} >
                     <FormControl
                         aria-label='User'
